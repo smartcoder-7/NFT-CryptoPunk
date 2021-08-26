@@ -1,11 +1,9 @@
 use crate::auction::{close_auction, create_auction, increase_auction_bid, withdraw_auction_bid};
 use crate::order::{cancel_sell_order, create_sell_order, fill_sell_order};
-use crate::state::{
-    Config, CONFIG, FEE_STORAGE,
-};
+use crate::state::{Config, CONFIG, FEE_STORAGE};
 use cosmwasm_std::{
-    entry_point, from_binary, Addr, Binary, Decimal, Deps, DepsMut, Env,
-    MessageInfo, Response, StdError, StdResult, Uint128,
+    entry_point, from_binary, Addr, Binary, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, Uint128,
 };
 use cw721::Cw721ReceiveMsg;
 use stardust_protocol::nft_auction::{Cw721HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg};

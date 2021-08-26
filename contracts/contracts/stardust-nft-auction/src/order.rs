@@ -2,7 +2,7 @@ use crate::state::{new_id, SellOrder, CONFIG, FEE_STORAGE, SELL_ORDERS};
 use cosmwasm_std::{
     to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Response, StdError, StdResult, WasmMsg,
 };
-use cw20_base::msg::{ExecuteMsg as TokenMsg};
+use cw20_base::msg::ExecuteMsg as TokenMsg;
 use cw721::Cw721ExecuteMsg;
 use terraswap::asset::{Asset, AssetInfo};
 
@@ -66,7 +66,10 @@ pub fn fill_sell_order(
         amount: order.requested_asset.amount - fee_amt,
     };
 
-    let mut current_fee = FEE_STORAGE.load(deps.storage, order.requested_asset.info.to_string().as_bytes())?;
+    let mut current_fee = FEE_STORAGE.load(
+        deps.storage,
+        order.requested_asset.info.to_string().as_bytes(),
+    )?;
     current_fee += fee_amt;
 
     FEE_STORAGE.save(

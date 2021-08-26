@@ -1,8 +1,8 @@
 use cosmwasm_std::{Decimal, Uint128};
+use cw721::Cw721ReceiveMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use terraswap::asset::{AssetInfo, Asset};
-use cw721::Cw721ReceiveMsg;
+use terraswap::asset::{Asset, AssetInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -25,13 +25,13 @@ pub enum ExecuteMsg {
     // if you do not have a bid, it creates a new bid
     IncreaseAuctionBid {
         auction_id: u64,
-        asset: Asset
+        asset: Asset,
     },
 
     // withdraw your auction bid and returns your assets
     // callable only if you are not the top bidder
     WithdrawAuctionBid {
-        auction_id: u64
+        auction_id: u64,
     },
 
     // fill someone's sell order to directly buy an NFT
@@ -41,7 +41,7 @@ pub enum ExecuteMsg {
 
     // cancel a sell order for an NFT that you created
     CancelSellOrder {
-        order_id: u64
+        order_id: u64,
     },
 
     // close an auction
@@ -54,7 +54,7 @@ pub enum ExecuteMsg {
     // 2) after auction expiration, callable by anyone
     CloseAuction {
         auction_id: u64,
-        require_no_bidder: bool
+        require_no_bidder: bool,
     },
 
     // withdraw fees (in some asset) collected by contract
@@ -62,8 +62,8 @@ pub enum ExecuteMsg {
     // callable only by owner (governance?)
     WithdrawFees {
         asset_info: AssetInfo,
-        address: String
-    }
+        address: String,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -81,7 +81,6 @@ pub enum Cw721HookMsg {
         denom: AssetInfo,
     },
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]

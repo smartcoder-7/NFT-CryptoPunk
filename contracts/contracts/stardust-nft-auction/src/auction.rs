@@ -79,7 +79,9 @@ pub fn close_auction(
                 &current_fee,
             )?;
 
-            messages.push(to_creator.into_msg(&deps.querier, Addr::unchecked(auction.creator.clone()))?);
+            messages.push(
+                to_creator.into_msg(&deps.querier, Addr::unchecked(auction.creator.clone()))?,
+            );
             messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: auction.nft_contract.clone(),
                 msg: to_binary(&Cw721ExecuteMsg::TransferNft {

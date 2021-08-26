@@ -1,4 +1,3 @@
-pub mod auction;
 pub mod contract;
-pub mod order;
+pub mod msg;
 pub mod state;
