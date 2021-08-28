@@ -1,8 +1,5 @@
 use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{
-    new_id, Config, Reservation, CONFIG, RESERVATIONS, RESERVATION_COUNT, SALE_COUNT,
-    WITHDRAW_COUNT,
-};
+use crate::state::{new_id, Config, Reservation, CONFIG, RESERVATIONS, RESERVATION_COUNT, SALE_COUNT, WITHDRAW_COUNT, UNIQUE_ID};
 use cosmwasm_std::{
     entry_point, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
     StdError, StdResult, Uint128, WasmMsg,
@@ -30,6 +27,7 @@ pub fn instantiate(
         return Err(StdError::generic_err("cost must be native token"));
     }
 
+    UNIQUE_ID.save(deps.storage, &0)?;
     SALE_COUNT.save(deps.storage, &0)?;
     WITHDRAW_COUNT.save(deps.storage, &0)?;
     CONFIG.save(deps.storage, &cfg)?;
@@ -157,7 +155,10 @@ pub fn reserve_nft(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Resp
     let cfg = CONFIG.load(deps.storage)?;
     cfg.cost.assert_sent_native_token_balance(&info)?;
 
-    let count = RESERVATION_COUNT.load(deps.storage, info.sender.as_bytes())?;
+    let count = RESERVATION_COUNT
+        .load(deps.storage, info.sender.as_bytes())
+        .unwrap_or(0);
+
     if count == cfg.limit_per_address {
         return Err(StdError::generic_err("this address cannot mint more nfts"));
     }
@@ -172,9 +173,6 @@ pub fn reserve_nft(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Resp
 
     RESERVATIONS.save(deps.storage, &reservation_n.to_be_bytes(), &reservation)?;
 
-    if info.sender.into_string() != cfg.owner {
-        return Err(StdError::generic_err("not authorized"));
-    }
     Ok(Response::new())
 }
 
@@ -195,5 +193,93 @@ pub fn set_nft_contract(
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(_deps: Deps, _env: Env, _msg: QueryMsg) -> StdResult<Binary> {
+    /*
+    TODO: Queries:
+    - Current state
+    - Reservation by ID
+    - All reservations (paginate?)
+     */
     Err(StdError::generic_err("no queries"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{coins, SubMsg};
+    use terraswap::asset::AssetInfo;
+
+    #[test]
+    fn happy_path() {
+        let mut deps = mock_dependencies(&[]);
+        let env = mock_env();
+
+        let creator_info = mock_info("creator", &coins(1000, "uluna"));
+
+        // Create the distribution contract
+        let create_msg = InstantiateMsg {
+            owner: creator_info.sender.to_string(),
+            cost: Asset {
+                info: AssetInfo::NativeToken { denom: "uluna".to_string() },
+                amount: Uint128::new(100),
+            },
+            nft_contract: None,
+            limit_per_address: 5,
+            nft_limit: 10,
+            response_seconds: 10000,
+        };
+        let create_res = instantiate(deps.as_mut(), env.clone(), creator_info.clone(), create_msg).unwrap();
+        assert_eq!(0, create_res.messages.len());
+
+        // Set smart contract address
+        let set_contract_msg = ExecuteMsg::SetNftContract {
+            contract_addr: String::from("contract_addr")
+        };
+        execute(deps.as_mut(), env.clone(), creator_info.clone(), set_contract_msg).unwrap();
+
+        // Try to create a reservation
+        let purchaser_info = mock_info("purchaser", &coins(100, "uluna"));
+        let create_reservation_msg = ExecuteMsg::ReserveNft {};
+        execute(deps.as_mut(), env.clone(), purchaser_info.clone(), create_reservation_msg).unwrap();
+
+        // Mint NFT
+        let token_id = "0".to_string();
+        let token_name = "token".to_string();
+        let mint_nft_msg = ExecuteMsg::MintNft {
+            reservation_id: 0,
+            token_id: token_id.clone(),
+            name: token_name.clone(),
+            description: None,
+            image: None,
+        };
+        let mint_result = execute(deps.as_mut(), env.clone(), creator_info.clone(), mint_nft_msg).unwrap();
+        assert_eq!(
+            mint_result.messages[0],
+            SubMsg::new(
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: "contract_addr".to_string(),
+                    msg: to_binary(&Cw721ExecuteMsg::Mint {
+                        0: MintMsg {
+                            token_id: token_id.clone(),
+                            owner: purchaser_info.sender.clone().to_string(),
+                            name: token_name.clone(),
+                            description: None,
+                            image: None,
+                        },
+                    }).unwrap(),
+                    funds: vec![],
+                }))
+        );
+    }
+
+    /*
+    TODO: Test cases:
+    - Reserve with insufficient cost
+    - Reserve with # > limit_per_address
+    - Reserve with # > max_nft
+    - Refund happy path
+    - Refund with already refunded reservation
+    - Withdraw sales happy path
+    - Withdraw sales unauthorized
+     */
 }

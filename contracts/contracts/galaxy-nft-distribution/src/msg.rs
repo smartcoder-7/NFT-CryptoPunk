@@ -17,7 +17,7 @@ pub struct InstantiateMsg {
     // maximum number of nfts this contract is allowed to mint
     // so owner cannot dilute the supply
     pub nft_limit: u64,
-    // cost can be refunded if NFT is not sent within response_seconds
+    // cost can be refunded if NFT is not sent within response_seconds after reservation is made
     pub response_seconds: u64,
 }
 
@@ -54,6 +54,7 @@ pub enum ExecuteMsg {
         description: Option<String>,
         /// A URI pointing to an image representing the asset
         image: Option<String>,
+        // TODO: How to support custom NFT contracts?
     },
 
     // withdraw proceeds from selling nfts. note that this will always leave
