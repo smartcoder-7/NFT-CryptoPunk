@@ -1,8 +1,6 @@
 [workspace]
 members = [
-    "contracts/stardust-nft-auction",
     "contracts/galaxy-nft-distribution",
-    "packages/*"
 ]
 
 [profile.release]

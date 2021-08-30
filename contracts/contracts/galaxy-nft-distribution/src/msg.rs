@@ -64,4 +64,18 @@ pub enum ExecuteMsg {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
-pub enum QueryMsg {}
+pub enum QueryMsg {
+    ReservationById {
+        id: u64
+    },
+    ReservationsByAddress {
+        address: String,
+    },
+    ValidReservations {
+        start_at: u64,
+        limit: u64
+    },
+    DistributionStatus {
+
+    }
+}
